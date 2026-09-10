@@ -8,8 +8,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { useTheme } from '../../src/context/ThemeContext';
+import { ArrowLeftIcon } from '../../src/components/icons/ArrowLeftIcon';
+import { themeConfig } from '../../src/constants/theme';
+import { typography } from '../../src/constants/typography';
 import { useLanguage } from '../../src/context/LanguageContext';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
@@ -27,7 +30,17 @@ export default function ForgotPasswordScreen() {
       ]}
     >
       <View style={styles.content}>
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel={isSwahili ? 'Rudi' : 'Back'}
+          hitSlop={8}
+          style={styles.backButton}
+        >
+          <ArrowLeftIcon
+            size={themeConfig.icons.md}
+            color={colors.primary}
+          />
           <Text
             style={[
               styles.back,
@@ -36,7 +49,7 @@ export default function ForgotPasswordScreen() {
               },
             ]}
           >
-            ← {isSwahili ? 'Rudi' : 'Back'}
+            {isSwahili ? 'Rudi' : 'Back'}
           </Text>
         </Pressable>
 
@@ -74,24 +87,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
   content: {
-    padding: 24,
+    padding: themeConfig.screen.paddingHorizontal,
   },
-
-  back: {
-    fontSize: 15,
-    fontWeight: '800',
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 50,
+    minHeight: 44,
   },
-
+  back: {
+    fontSize: typography.md,
+    fontWeight: typography.weight.bold,
+  },
   title: {
-    fontSize: 30,
-    fontWeight: '900',
+    fontSize: typography.title,
+    fontWeight: typography.weight.heavy,
   },
-
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.lg,
     lineHeight: 24,
     marginTop: 12,
   },

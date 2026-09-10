@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 
-import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { LanguageProvider } from '../src/context/LanguageContext';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 
 function AppNavigator() {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
 
   return (
     <>
@@ -17,9 +22,7 @@ function AppNavigator() {
           headerShown: false,
           animation: 'fade',
           contentStyle: {
-            backgroundColor: isDark
-              ? '#0B1210'
-              : '#F7FAF8',
+            backgroundColor: colors.background,
           },
         }}
       >

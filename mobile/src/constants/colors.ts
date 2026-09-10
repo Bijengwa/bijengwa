@@ -1,49 +1,89 @@
+export const brand = {
+  teal: '#0088B0',
+  tealDark: '#006786',
+  tealDeep: '#004961',
+  tealBright: '#38A9CD',
+  tealSoft: '#E9F8FF',
+  steel: '#5980A6',
+  key: '#DA9258',
+  ink: '#201E1D',
+  paper: '#F3F2F2',
+} as const;
+
 export const colors = {
   light: {
-    background: '#F7FAF8',
+    background: '#F5F8FA',
     surface: '#FFFFFF',
-    surfaceSecondary: '#F0F5F2',
+    surfaceSecondary: '#EEF3F6',
 
-    primary: '#18A957',
-    primaryDark: '#128344',
-    primaryLight: '#DDF5E7',
+    primary: '#0088B0',
+    primaryDark: '#006786',
+    primaryLight: '#E9F8FF',
 
-    secondary: '#208AEF',
-    secondaryDark: '#126DC4',
-    secondaryLight: '#DCEEFF',
+    secondary: '#1F9A62',
+    secondaryDark: '#16784B',
+    secondaryLight: '#E5F6EE',
 
-    text: '#10251A',
-    textSecondary: '#63736A',
-    textMuted: '#8A9890',
+    accent: '#DA9258',
+    steel: '#5980A6',
 
-    border: '#DCE5DF',
-    inputBackground: '#F8FAF9',
+    text: '#1A242B',
+    textSecondary: '#5B6B73',
+    textMuted: '#8A9AA2',
+    textOnPrimary: '#FFFFFF',
 
+    border: '#D3DEE4',
+    borderFocused: '#0088B0',
+    inputBackground: '#FFFFFF',
+    inputBorder: '#D3DEE4',
+
+    icon: '#3D4F58',
+    iconMuted: '#8A9AA2',
+
+    skyline: '#C5D5DE',
+    skylineAccent: '#7FB3C8',
+    skylineWindow: '#8FD0C0',
+
+    overlay: 'rgba(26, 36, 43, 0.08)',
     danger: '#D92D20',
     white: '#FFFFFF',
     black: '#000000',
   },
 
   dark: {
-    background: '#0B1210',
-    surface: '#121B17',
-    surfaceSecondary: '#18241E',
+    background: '#0C151A',
+    surface: '#152228',
+    surfaceSecondary: '#1B2A32',
 
-    primary: '#35C875',
-    primaryDark: '#20A95C',
-    primaryLight: '#123B25',
+    primary: '#3BB7D8',
+    primaryDark: '#2A9EBD',
+    primaryLight: '#0F2F39',
 
-    secondary: '#4CA5FF',
-    secondaryDark: '#208AEF',
-    secondaryLight: '#102A42',
+    secondary: '#3DCC8A',
+    secondaryDark: '#2AA970',
+    secondaryLight: '#123528',
 
-    text: '#FFFFFF',
-    textSecondary: '#B4C0B9',
-    textMuted: '#7F8E85',
+    accent: '#E0A06C',
+    steel: '#7A9BB8',
 
-    border: '#29362F',
-    inputBackground: '#17211C',
+    text: '#F2F6F8',
+    textSecondary: '#B3C2C8',
+    textMuted: '#7E9199',
+    textOnPrimary: '#082028',
 
+    border: '#2E4450',
+    borderFocused: '#3BB7D8',
+    inputBackground: '#1B2A32',
+    inputBorder: '#2E4450',
+
+    icon: '#D5E2E7',
+    iconMuted: '#7E9199',
+
+    skyline: '#24343C',
+    skylineAccent: '#3A5A68',
+    skylineWindow: '#2F6B62',
+
+    overlay: 'rgba(0, 0, 0, 0.35)',
     danger: '#FF6B61',
     white: '#FFFFFF',
     black: '#000000',
@@ -51,3 +91,4 @@ export const colors = {
 } as const;
 
 export type ThemeMode = 'light' | 'dark';
+export type ThemeColors = (typeof colors)[ThemeMode];

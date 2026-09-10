@@ -6,11 +6,13 @@ import React, {
   useState,
 } from 'react';
 
-import { colors, ThemeMode } from '../constants/colors';
+import { colors, ThemeColors, ThemeMode } from '../constants/colors';
+import { themeConfig } from '../constants/theme';
 
 type ThemeContextValue = {
   mode: ThemeMode;
-  colors: typeof colors.light;
+  colors: ThemeColors;
+  theme: typeof themeConfig;
   toggleTheme: () => void;
   isDark: boolean;
 };
@@ -32,6 +34,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
     () => ({
       mode,
       colors: colors[mode],
+      theme: themeConfig,
       toggleTheme,
       isDark: mode === 'dark',
     }),

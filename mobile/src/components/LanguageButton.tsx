@@ -1,31 +1,42 @@
 import React from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
+import { themeConfig } from '../constants/theme';
+import { typography } from '../constants/typography';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { ChevronDownIcon } from './icons/ChevronDownIcon';
+import { LanguageIcon } from './icons/LanguageIcon';
 
 export function LanguageButton() {
-  const { language, toggleLanguage } = useLanguage();
+  const { language, toggleLanguage, isSwahili } = useLanguage();
   const { colors } = useTheme();
 
   return (
     <Pressable
       onPress={toggleLanguage}
+      accessibilityRole="button"
+      accessibilityLabel={
+        isSwahili
+          ? 'Badilisha lugha. Lugha ya sasa ni Kiswahili'
+          : 'Change language. Current language is English'
+      }
       style={({ pressed }) => [
         styles.container,
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? themeConfig.buttons.pressedOpacity : 1,
+          transform: [
+            { scale: pressed ? themeConfig.buttons.pressedScale : 1 },
+          ],
         },
       ]}
     >
-      <Text style={styles.flag}>🇹🇿</Text>
+      <LanguageIcon
+        size={themeConfig.icons.sm}
+        color={colors.icon}
+      />
 
       <Text
         style={[
@@ -38,43 +49,26 @@ export function LanguageButton() {
         {language === 'en' ? 'EN' : 'SW'}
       </Text>
 
-      <Text
-        style={[
-          styles.arrow,
-          {
-            color: colors.textSecondary,
-          },
-        ]}
-      >
-        ▾
-      </Text>
+      <ChevronDownIcon
+        size={themeConfig.icons.sm}
+        color={colors.iconMuted}
+      />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: 42,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-
+    minHeight: themeConfig.controls.height,
+    paddingHorizontal: themeConfig.controls.paddingHorizontal,
+    borderRadius: themeConfig.radius.pill,
+    borderWidth: themeConfig.controls.borderWidth,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: themeConfig.controls.gap,
   },
-
-  flag: {
-    fontSize: 18,
-  },
-
   language: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
-
-  arrow: {
-    fontSize: 13,
-    marginTop: -2,
+    fontSize: typography.sm,
+    fontWeight: typography.weight.bold,
   },
 });

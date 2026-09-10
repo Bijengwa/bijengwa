@@ -1,74 +1,46 @@
 import React from 'react';
-import {
-  Image,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { themeConfig } from '../constants/theme';
+import { typography } from '../constants/typography';
 import { useTheme } from '../context/ThemeContext';
+import { BijengwaMark } from './icons/BijengwaMark';
+
+type LogoSize = 'small' | 'medium' | 'large';
 
 type LogoProps = {
-  size?: 'small' | 'medium' | 'large';
+  size?: LogoSize;
+  showWordmark?: boolean;
 };
 
-export function Logo({ size = 'medium' }: LogoProps) {
-  const { colors } = useTheme();
-
-  const dimensions = {
-    small: 42,
-    medium: 64,
-    large: 82,
-  };
-
-  const logoSize = dimensions[size];
+export function Logo({ size = 'medium', showWordmark = true }: LogoProps) {
+  const { colors, isDark } = useTheme();
+  const markSize = themeConfig.logo[size];
 
   return (
-    <View style={styles.container}>
-      {/*
-        Replace this Text with your actual Bijengwa logo
-        once we confirm the exact filename in /assets.
-      */}
+    <View
+      style={styles.container}
+      accessibilityRole="image"
+      accessibilityLabel="Bijengwa"
+    >
+      <BijengwaMark
+        size={markSize}
+        variant={isDark ? 'onDark' : 'color'}
+      />
 
-      <View
-        style={[
-          styles.logoPlaceholder,
-          {
-            width: logoSize,
-            height: logoSize,
-            borderRadius: logoSize / 3,
-            backgroundColor: colors.primary,
-          },
-        ]}
-      >
+      {showWordmark ? (
         <Text
           style={[
-            styles.logoLetter,
+            styles.wordmark,
             {
-              fontSize: logoSize * 0.45,
+              color: colors.text,
+              fontSize: typography.wordmark[size],
             },
           ]}
         >
-          B
+          BIJENGWA
         </Text>
-      </View>
-
-      <Text
-        style={[
-          styles.brand,
-          {
-            color: colors.text,
-            fontSize:
-              size === 'large'
-                ? 30
-                : size === 'medium'
-                  ? 26
-                  : 21,
-          },
-        ]}
-      >
-        Bijengwa
-      </Text>
+      ) : null}
     </View>
   );
 }
@@ -77,20 +49,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-
-  logoPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-
-  logoLetter: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-
-  brand: {
-    fontWeight: '800',
-    letterSpacing: -0.8,
+  wordmark: {
+    marginTop: 6,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.letterSpacing.wordmark,
   },
 });

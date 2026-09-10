@@ -9,64 +9,49 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { Logo } from '../../src/components/Logo';
+import { typography } from '../../src/constants/typography';
+import { useLanguage } from '../../src/context/LanguageContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
 export default function SplashScreen() {
   const { colors } = useTheme();
+  const { language } = useLanguage();
 
-  const keyScale = useRef(
-    new Animated.Value(0.2)
-  ).current;
-
-  const keyRotate = useRef(
-    new Animated.Value(-25)
-  ).current;
-
-  const keyOpacity = useRef(
-    new Animated.Value(0)
-  ).current;
-
-  const brandOpacity = useRef(
-    new Animated.Value(0)
-  ).current;
-
-  const brandTranslate = useRef(
-    new Animated.Value(15)
-  ).current;
+  const markScale = useRef(new Animated.Value(0.2)).current;
+  const markRotate = useRef(new Animated.Value(-18)).current;
+  const markOpacity = useRef(new Animated.Value(0)).current;
+  const brandOpacity = useRef(new Animated.Value(0)).current;
+  const brandTranslate = useRef(new Animated.Value(15)).current;
 
   useEffect(() => {
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(keyOpacity, {
+        Animated.timing(markOpacity, {
           toValue: 1,
           duration: 350,
           useNativeDriver: true,
         }),
-
-        Animated.spring(keyScale, {
+        Animated.spring(markScale, {
           toValue: 1,
           friction: 5,
           tension: 70,
           useNativeDriver: true,
         }),
-
-        Animated.timing(keyRotate, {
+        Animated.timing(markRotate, {
           toValue: 0,
           duration: 650,
           easing: Easing.out(Easing.back(1.4)),
           useNativeDriver: true,
         }),
       ]),
-
-      Animated.delay(350),
-
+      Animated.delay(250),
       Animated.parallel([
         Animated.timing(brandOpacity, {
           toValue: 1,
           duration: 450,
           useNativeDriver: true,
         }),
-
         Animated.timing(brandTranslate, {
           toValue: 0,
           duration: 450,
@@ -74,16 +59,13 @@ export default function SplashScreen() {
           useNativeDriver: true,
         }),
       ]),
-
       Animated.delay(900),
-
       Animated.parallel([
-        Animated.timing(keyOpacity, {
+        Animated.timing(markOpacity, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }),
-
         Animated.timing(brandOpacity, {
           toValue: 0,
           duration: 300,
@@ -93,11 +75,11 @@ export default function SplashScreen() {
     ]).start(() => {
       router.replace('/auth/login');
     });
-  }, []);
+  }, [brandOpacity, brandTranslate, markOpacity, markRotate, markScale]);
 
-  const rotate = keyRotate.interpolate({
-    inputRange: [-25, 0],
-    outputRange: ['-25deg', '0deg'],
+  const rotate = markRotate.interpolate({
+    inputRange: [-18, 0],
+    outputRange: ['-18deg', '0deg'],
   });
 
   return (
@@ -112,55 +94,14 @@ export default function SplashScreen() {
       <View style={styles.container}>
         <Animated.View
           style={[
-            styles.keyContainer,
+            styles.markContainer,
             {
-              opacity: keyOpacity,
-              transform: [
-                {
-                  scale: keyScale,
-                },
-                {
-                  rotate,
-                },
-              ],
+              opacity: markOpacity,
+              transform: [{ scale: markScale }, { rotate }],
             },
           ]}
         >
-          <View
-            style={[
-              styles.keyCircle,
-              {
-                backgroundColor: colors.primary,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.keyHole,
-                {
-                  backgroundColor: colors.background,
-                },
-              ]}
-            />
-          </View>
-
-          <View
-            style={[
-              styles.keyStem,
-              {
-                backgroundColor: colors.primary,
-              },
-            ]}
-          />
-
-          <View
-            style={[
-              styles.keyTooth,
-              {
-                backgroundColor: colors.primary,
-              },
-            ]}
-          />
+          <Logo size="large" showWordmark={false} />
         </Animated.View>
 
         <Animated.View
@@ -168,11 +109,7 @@ export default function SplashScreen() {
             styles.brandContainer,
             {
               opacity: brandOpacity,
-              transform: [
-                {
-                  translateY: brandTranslate,
-                },
-              ],
+              transform: [{ translateY: brandTranslate }],
             },
           ]}
         >
@@ -184,7 +121,7 @@ export default function SplashScreen() {
               },
             ]}
           >
-            Bijengwa
+            BIJENGWA
           </Text>
 
           <Text
@@ -195,7 +132,9 @@ export default function SplashScreen() {
               },
             ]}
           >
-            Find Your Place
+            {language === 'sw'
+              ? 'Pata Mahali. Jenga Kitu.'
+              : 'Find a Place. Build Something.'}
           </Text>
         </Animated.View>
       </View>
@@ -207,87 +146,27 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  keyContainer: {
-    width: 100,
-    height: 100,
+  markContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-
-  keyCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-
-    position: 'absolute',
-    left: 7,
-    top: 12,
-  },
-
-  keyHole: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-
-    position: 'absolute',
-    left: 19,
-    top: 19,
-  },
-
-  keyStem: {
-    width: 48,
-    height: 16,
-    borderRadius: 8,
-
-    position: 'absolute',
-    right: 0,
-    top: 33,
-
-    transform: [
-      {
-        rotate: '-45deg',
-      },
-    ],
-  },
-
-  keyTooth: {
-    width: 19,
-    height: 24,
-    borderRadius: 4,
-
-    position: 'absolute',
-    right: 0,
-    top: 50,
-
-    transform: [
-      {
-        rotate: '-45deg',
-      },
-    ],
-  },
-
   brandContainer: {
     alignItems: 'center',
-    marginTop: 28,
+    marginTop: 20,
   },
-
   brand: {
-    fontSize: 32,
-    fontWeight: '900',
-    letterSpacing: -1,
+    fontSize: typography.xxl,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.letterSpacing.wordmark,
   },
-
   tagline: {
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: '600',
+    marginTop: 8,
+    fontSize: typography.md,
+    fontWeight: typography.weight.medium,
   },
 });

@@ -60,7 +60,14 @@ export default function RegisterScreen() {
             },
           ]}
         >
-          <Text style={styles.buttonText}>
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: colors.textOnPrimary,
+              },
+            ]}
+          >
             {isSwahili
               ? 'Rudi kwenye Ingia'
               : 'Back to Login'}
@@ -101,7 +108,6 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
   },

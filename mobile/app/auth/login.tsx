@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,27 +9,35 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { useTheme } from '../../src/context/ThemeContext';
-import { useLanguage } from '../../src/context/LanguageContext';
-
-import { Logo } from '../../src/components/Logo';
+import { CitySkyline } from '../../src/components/CitySkyline';
 import { LanguageButton } from '../../src/components/LanguageButton';
+import { Logo } from '../../src/components/Logo';
 import { ThemeToggle } from '../../src/components/ThemeToggle';
-
+import { ArrowRightIcon } from '../../src/components/icons/ArrowRightIcon';
+import { EyeIcon } from '../../src/components/icons/EyeIcon';
+import { EyeOffIcon } from '../../src/components/icons/EyeOffIcon';
+import { LockIcon } from '../../src/components/icons/LockIcon';
+import { UserIcon } from '../../src/components/icons/UserIcon';
 import { spacing } from '../../src/constants/spacing';
-import { typography } from '../../src/constants/typography';
 import { themeConfig } from '../../src/constants/theme';
+import { typography } from '../../src/constants/typography';
+import { useLanguage } from '../../src/context/LanguageContext';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { language } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const passwordRef = useRef<TextInput>(null);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [identifierFocused, setIdentifierFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const isSwahili = language === 'sw';
 
@@ -53,6 +61,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView
+      edges={['top']}
       style={[
         styles.safeArea,
         {
@@ -62,25 +71,25 @@ export default function LoginScreen() {
     >
       <KeyboardAvoidingView
         style={styles.keyboard}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          {/* TOP CONTROLS */}
-
           <View style={styles.topBar}>
             <LanguageButton />
             <ThemeToggle />
           </View>
-
-          {/* BRAND */}
 
           <View style={styles.brandSection}>
             <Logo size="medium" />
@@ -94,12 +103,10 @@ export default function LoginScreen() {
               ]}
             >
               {isSwahili
-                ? 'Pata Mahali Pako'
-                : 'Find Your Place'}
+                ? 'Pata Mahali. Jenga Kitu.'
+                : 'Find a Place. Build Something.'}
             </Text>
           </View>
-
-          {/* LOGIN */}
 
           <View style={styles.formSection}>
             <Text
@@ -110,9 +117,7 @@ export default function LoginScreen() {
                 },
               ]}
             >
-              {isSwahili
-                ? 'Karibu Tena'
-                : 'Welcome Back'}
+              {isSwahili ? 'Karibu Tena' : 'Welcome Back'}
             </Text>
 
             <Text
@@ -124,12 +129,10 @@ export default function LoginScreen() {
               ]}
             >
               {isSwahili
-                ? 'Ingia kwenye akaunti yako ya Bijengwa'
-                : 'Login to your Bijengwa account'}
+                ? 'Ingia kuendelea na Bijengwa'
+                : 'Sign in to continue with Bijengwa'}
             </Text>
 
-            {/* IDENTIFIER */}
-
             <View style={styles.field}>
               <Text
                 style={[
@@ -140,76 +143,123 @@ export default function LoginScreen() {
                 ]}
               >
                 {isSwahili
-                  ? 'Jina la mtumiaji, barua pepe au simu'
+                  ? 'Jina la mtumiaji, barua pepe au namba ya simu'
                   : 'Username, Email or Phone Number'}
-              </Text>
-
-              <TextInput
-                value={identifier}
-                onChangeText={setIdentifier}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                placeholder={
-                  isSwahili
-                    ? 'Jina la mtumiaji, barua pepe au namba ya simu'
-                    : 'Username, email or phone number'
-                }
-                placeholderTextColor={colors.textMuted}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor:
-                      colors.inputBackground,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-              />
-            </View>
-
-            {/* PASSWORD */}
-
-            <View style={styles.field}>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: colors.text,
-                  },
-                ]}
-              >
-                {isSwahili
-                  ? 'Nenosiri'
-                  : 'Password'}
               </Text>
 
               <View
                 style={[
-                  styles.passwordWrapper,
+                  styles.inputShell,
                   {
-                    backgroundColor:
-                      colors.inputBackground,
-                    borderColor: colors.border,
+                    backgroundColor: colors.inputBackground,
+                    borderColor: identifierFocused
+                      ? colors.borderFocused
+                      : colors.inputBorder,
+                  },
+                  identifierFocused && !isDark
+                    ? themeConfig.shadows.soft
+                    : themeConfig.shadows.none,
+                ]}
+              >
+                <UserIcon
+                  size={themeConfig.icons.md}
+                  color={
+                    identifierFocused ? colors.primary : colors.iconMuted
+                  }
+                />
+
+                <TextInput
+                  value={identifier}
+                  onChangeText={setIdentifier}
+                  onFocus={() => setIdentifierFocused(true)}
+                  onBlur={() => setIdentifierFocused(false)}
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="username"
+                  textContentType="username"
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                  placeholder={
+                    isSwahili
+                      ? 'Jina la mtumiaji, barua pepe au namba ya simu'
+                      : 'Username, email or phone number'
+                  }
+                  placeholderTextColor={colors.textMuted}
+                  cursorColor={colors.primary}
+                  selectionColor={colors.primary}
+                  accessibilityLabel={
+                    isSwahili
+                      ? 'Jina la mtumiaji, barua pepe au namba ya simu'
+                      : 'Username, email or phone number'
+                  }
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: colors.text,
                   },
                 ]}
               >
+                {isSwahili ? 'Nenosiri' : 'Password'}
+              </Text>
+
+              <View
+                style={[
+                  styles.inputShell,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: passwordFocused
+                      ? colors.borderFocused
+                      : colors.inputBorder,
+                  },
+                  passwordFocused && !isDark
+                    ? themeConfig.shadows.soft
+                    : themeConfig.shadows.none,
+                ]}
+              >
+                <LockIcon
+                  size={themeConfig.icons.md}
+                  color={passwordFocused ? colors.primary : colors.iconMuted}
+                />
+
                 <TextInput
+                  ref={passwordRef}
                   value={password}
                   onChangeText={setPassword}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  onSubmitEditing={handleLogin}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  autoComplete="password"
+                  textContentType="password"
+                  returnKeyType="done"
                   placeholder={
                     isSwahili
                       ? 'Ingiza nenosiri lako'
                       : 'Enter your password'
                   }
-                  placeholderTextColor={
-                    colors.textMuted
+                  placeholderTextColor={colors.textMuted}
+                  cursorColor={colors.primary}
+                  selectionColor={colors.primary}
+                  accessibilityLabel={
+                    isSwahili ? 'Nenosiri' : 'Password'
                   }
                   style={[
-                    styles.passwordInput,
+                    styles.input,
                     {
                       color: colors.text,
                     },
@@ -217,40 +267,40 @@ export default function LoginScreen() {
                 />
 
                 <Pressable
-                  onPress={() =>
-                    setShowPassword(
-                      (current) => !current
-                    )
-                  }
+                  onPress={() => setShowPassword((current) => !current)}
                   hitSlop={10}
-                >
-                  <Text
-                    style={[
-                      styles.showPassword,
-                      {
-                        color: colors.primary,
-                      },
-                    ]}
-                  >
-                    {showPassword
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showPassword
                       ? isSwahili
-                        ? 'Ficha'
-                        : 'Hide'
+                        ? 'Ficha nenosiri'
+                        : 'Hide password'
                       : isSwahili
-                        ? 'Onyesha'
-                        : 'Show'}
-                  </Text>
+                        ? 'Onyesha nenosiri'
+                        : 'Show password'
+                  }
+                  style={styles.visibilityButton}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon
+                      size={themeConfig.icons.md}
+                      color={colors.icon}
+                    />
+                  ) : (
+                    <EyeIcon
+                      size={themeConfig.icons.md}
+                      color={colors.icon}
+                    />
+                  )}
                 </Pressable>
               </View>
             </View>
 
-            {/* FORGOT PASSWORD */}
-
             <Pressable
-              onPress={() =>
-                router.push(
-                  '/auth/forgot-password'
-                )
+              onPress={() => router.push('/auth/forgot-password')}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isSwahili ? 'Umesahau nenosiri?' : 'Forgot password?'
               }
               style={styles.forgotButton}
             >
@@ -262,35 +312,47 @@ export default function LoginScreen() {
                   },
                 ]}
               >
-                {isSwahili
-                  ? 'Umesahau nenosiri?'
-                  : 'Forgot password?'}
+                {isSwahili ? 'Umesahau nenosiri?' : 'Forgot password?'}
               </Text>
             </Pressable>
-
-            {/* LOGIN BUTTON */}
 
             <Pressable
               onPress={handleLogin}
+              accessibilityRole="button"
+              accessibilityLabel={isSwahili ? 'Ingia' : 'Login'}
               style={({ pressed }) => [
                 styles.loginButton,
                 {
-                  backgroundColor:
-                    colors.primary,
-                  opacity: pressed ? 0.8 : 1,
+                  backgroundColor: pressed
+                    ? colors.primaryDark
+                    : colors.primary,
+                  transform: [
+                    {
+                      scale: pressed
+                        ? themeConfig.buttons.pressedScale
+                        : 1,
+                    },
+                  ],
                 },
+                !isDark ? themeConfig.shadows.light : themeConfig.shadows.none,
               ]}
             >
-              <Text style={styles.loginButtonText}>
+              <Text
+                style={[
+                  styles.loginButtonText,
+                  {
+                    color: colors.textOnPrimary,
+                  },
+                ]}
+              >
                 {isSwahili ? 'Ingia' : 'Login'}
               </Text>
 
-              <Text style={styles.arrow}>
-                →
-              </Text>
+              <ArrowRightIcon
+                size={themeConfig.icons.md}
+                color={colors.textOnPrimary}
+              />
             </Pressable>
-
-            {/* REGISTER */}
 
             <View style={styles.registerRow}>
               <Text
@@ -307,11 +369,12 @@ export default function LoginScreen() {
               </Text>
 
               <Pressable
-                onPress={() =>
-                  router.push(
-                    '/auth/register'
-                  )
+                onPress={() => router.push('/auth/register')}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isSwahili ? 'Jisajili' : 'Register'
                 }
+                hitSlop={8}
               >
                 <Text
                   style={[
@@ -321,17 +384,15 @@ export default function LoginScreen() {
                     },
                   ]}
                 >
-                  {isSwahili
-                    ? 'Jisajili'
-                    : 'Register'}
+                  {isSwahili ? 'Jisajili' : 'Register'}
                 </Text>
               </Pressable>
             </View>
           </View>
 
-          {/* FOOTER */}
+          <View style={styles.bottomVisual}>
+            <CitySkyline colors={colors} />
 
-          <View style={styles.footer}>
             <Text
               style={[
                 styles.footerText,
@@ -341,8 +402,8 @@ export default function LoginScreen() {
               ]}
             >
               {isSwahili
-                ? 'Nyumba Bora • Maisha Bora'
-                : 'Better Homes • Brighter Futures'}
+                ? 'Mahali pa kuishi, kufanya kazi na biashara'
+                : 'Places for living, working, and business'}
             </Text>
           </View>
         </ScrollView>
@@ -355,159 +416,120 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-
   keyboard: {
     flex: 1,
   },
-
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.xxl,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: themeConfig.screen.paddingHorizontal,
   },
-
   topBar: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-
     paddingTop: spacing.sm,
   },
-
   brandSection: {
     alignItems: 'center',
-    marginTop: spacing.huge,
+    marginTop: themeConfig.screen.brandGap,
   },
-
   tagline: {
     marginTop: spacing.md,
     fontSize: typography.md,
-    fontWeight: '600',
+    fontWeight: typography.weight.medium,
+    textAlign: 'center',
   },
-
   formSection: {
-    marginTop: spacing.xxxl,
+    marginTop: themeConfig.screen.sectionGap,
   },
-
   title: {
     fontSize: typography.title,
-    fontWeight: '900',
-    letterSpacing: -0.8,
+    fontWeight: typography.weight.heavy,
+    letterSpacing: typography.letterSpacing.tight,
   },
-
   subtitle: {
     fontSize: typography.md,
     marginTop: spacing.sm,
     marginBottom: spacing.xxxl,
     lineHeight: 22,
   },
-
   field: {
     marginBottom: spacing.xl,
   },
-
   label: {
     fontSize: typography.sm,
-    fontWeight: '800',
+    fontWeight: typography.weight.bold,
     marginBottom: spacing.sm,
   },
-
-  input: {
-    height: themeConfig.inputHeight,
-
-    borderWidth: 1,
-    borderRadius: themeConfig.borderRadius.md,
-
-    paddingHorizontal: spacing.lg,
-
-    fontSize: typography.md,
-  },
-
-  passwordWrapper: {
-    height: themeConfig.inputHeight,
-
-    borderWidth: 1,
-    borderRadius: themeConfig.borderRadius.md,
-
+  inputShell: {
+    minHeight: themeConfig.inputs.height,
+    borderWidth: themeConfig.inputs.borderWidth,
+    borderRadius: themeConfig.inputs.radius,
     flexDirection: 'row',
     alignItems: 'center',
-
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.md,
+    paddingLeft: themeConfig.inputs.paddingHorizontal,
+    paddingRight: spacing.sm,
+    gap: themeConfig.inputs.iconGap,
   },
-
-  passwordInput: {
+  input: {
     flex: 1,
     height: '100%',
     fontSize: typography.md,
+    paddingVertical: spacing.md,
   },
-
-  showPassword: {
-    fontSize: typography.sm,
-    fontWeight: '800',
+  visibilityButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
   forgotButton: {
     alignSelf: 'flex-end',
     marginTop: -spacing.sm,
     marginBottom: spacing.xxl,
+    minHeight: 32,
+    justifyContent: 'center',
   },
-
   forgotText: {
     fontSize: typography.sm,
-    fontWeight: '800',
+    fontWeight: typography.weight.bold,
   },
-
   loginButton: {
-    height: themeConfig.buttonHeight,
-
-    borderRadius: themeConfig.borderRadius.md,
-
+    minHeight: themeConfig.buttons.height,
+    borderRadius: themeConfig.buttons.radius,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-
-    gap: spacing.md,
+    gap: themeConfig.buttons.iconGap,
   },
-
   loginButtonText: {
-    color: '#FFFFFF',
     fontSize: typography.md,
-    fontWeight: '900',
+    fontWeight: typography.weight.heavy,
   },
-
-  arrow: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-
+    flexWrap: 'wrap',
     marginTop: spacing.xxl,
   },
-
   registerText: {
     fontSize: typography.sm,
   },
-
   registerLink: {
     fontSize: typography.sm,
-    fontWeight: '900',
+    fontWeight: typography.weight.heavy,
   },
-
-  footer: {
+  bottomVisual: {
     marginTop: 'auto',
     paddingTop: spacing.xxxl,
     alignItems: 'center',
   },
-
   footerText: {
+    marginTop: spacing.md,
     fontSize: typography.xs,
-    fontWeight: '600',
+    fontWeight: typography.weight.medium,
+    textAlign: 'center',
   },
 });
