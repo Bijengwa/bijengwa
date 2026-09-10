@@ -4,9 +4,29 @@ const ApiError = require('../utils/ApiError');
 const { hashPassword, comparePassword } = require('../utils/password');
 const { generateUsername } = require('../utils/username');
 const { signToken } = require('../utils/jwt');
+const { logVerificationCodeIssued } = require('../utils/authLog');
 const profileModel = require('../models/profileModel');
 
 const VERIFICATION_CODE_MINUTES = 10;
+const MAX_VERIFICATION_ATTEMPTS = 5;
+const INVALID_CREDENTIALS = 'Invalid email or password';
+const INVALID_VERIFICATION = 'Invalid or expired verification code';
+
+const SENSITIVE_PROFILE_FIELDS = [
+  'password',
+  'verification_code',
+  'verification_code_expires_at',
+  'verification_failed_attempts',
+];
+
+let dummyPasswordHashPromise;
+
+function dummyPasswordHash() {
+  if (!dummyPasswordHashPromise) {
+    dummyPasswordHashPromise = hashPassword('bijengwa-timing-dummy');
+  }
+  return dummyPasswordHashPromise;
+}
 
 function generateVerificationCode() {
   return crypto.randomInt(100000, 1000000).toString();
@@ -16,6 +36,16 @@ function getVerificationExpiry() {
   return new Date(
     Date.now() + VERIFICATION_CODE_MINUTES * 60 * 1000,
   );
+}
+
+function toPublicProfile(profile) {
+  const safeProfile = { ...profile };
+
+  for (const field of SENSITIVE_PROFILE_FIELDS) {
+    delete safeProfile[field];
+  }
+
+  return safeProfile;
 }
 
 async function register({
@@ -49,6 +79,7 @@ async function register({
         is_verified: false,
         verification_code: generateVerificationCode(),
         verification_code_expires_at: getVerificationExpiry(),
+        verification_failed_attempts: 0,
       });
     } catch (error) {
       if (attempt === 4) {
@@ -61,92 +92,76 @@ async function register({
     throw new Error('Unable to create account');
   }
 
-  const verificationCode = profile.verification_code;
-
-  /*
-   * Temporary development delivery.
-   *
-   * Until a real email provider is configured,
-   * the code is printed to the backend terminal.
-   */
-  console.log(
-    `[DEV] Email verification code for ${normalizedEmail}: ${verificationCode}`,
-  );
-
-  const {
-    password: _password,
-    verification_code: _code,
-    verification_code_expires_at: _expires,
-    ...safeProfile
-  } = profile;
+  logVerificationCodeIssued(profile.verification_code);
 
   return {
-    profile: safeProfile,
+    profile: toPublicProfile(profile),
     verification_required: true,
   };
 }
 
 async function verifyEmail({ email, code }) {
   const normalizedEmail = String(email).trim().toLowerCase();
+  const submittedCode = String(code).trim();
 
   const profile = await profileModel.findByEmail(normalizedEmail);
 
   if (!profile) {
-    throw ApiError.notFound('No account found for this email');
+    throw ApiError.badRequest(INVALID_VERIFICATION);
   }
 
   if (profile.is_verified) {
     const token = signToken({ uuid: profile.uuid });
 
-    const {
-      password: _password,
-      verification_code: _code,
-      verification_code_expires_at: _expires,
-      ...safeProfile
-    } = profile;
-
     return {
-      profile: safeProfile,
+      profile: toPublicProfile(profile),
       token,
     };
   }
 
-  if (!profile.verification_code) {
-    throw ApiError.badRequest(
-      'No verification code is available. Please request a new code.',
-    );
-  }
-
   if (
+    !profile.verification_code ||
     !profile.verification_code_expires_at ||
     new Date(profile.verification_code_expires_at) < new Date()
   ) {
     throw ApiError.badRequest(
-      'Verification code expired. Please request a new code.',
+      `${INVALID_VERIFICATION}. Please request a new code.`,
     );
   }
 
-  if (String(profile.verification_code) !== String(code).trim()) {
-    throw ApiError.badRequest('Invalid verification code');
+  if (String(profile.verification_code) !== submittedCode) {
+    const attempts = (profile.verification_failed_attempts || 0) + 1;
+
+    if (attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      await profileModel.update(profile.uuid, {
+        verification_code: null,
+        verification_code_expires_at: null,
+        verification_failed_attempts: 0,
+      });
+
+      throw ApiError.badRequest(
+        'Too many attempts. Please request a new code.',
+      );
+    }
+
+    await profileModel.update(profile.uuid, {
+      verification_failed_attempts: attempts,
+    });
+
+    throw ApiError.badRequest(INVALID_VERIFICATION);
   }
 
   const updated = await profileModel.update(profile.uuid, {
     is_verified: true,
     verification_code: null,
     verification_code_expires_at: null,
+    verification_failed_attempts: 0,
   });
 
   const token = signToken({ uuid: updated.uuid });
 
-  const {
-    password: _password,
-    verification_code: _code,
-    verification_code_expires_at: _expires,
-    ...safeProfile
-  } = updated;
-
   return {
-    profile: safeProfile,
+    profile: toPublicProfile(updated),
     token,
   };
 }
@@ -156,14 +171,7 @@ async function resendVerificationCode(email) {
 
   const profile = await profileModel.findByEmail(normalizedEmail);
 
-  /*
-   * Don't reveal whether an email exists.
-   */
-  if (!profile) {
-    return;
-  }
-
-  if (profile.is_verified) {
+  if (!profile || profile.is_verified) {
     return;
   }
 
@@ -173,11 +181,10 @@ async function resendVerificationCode(email) {
   await profileModel.update(profile.uuid, {
     verification_code: verificationCode,
     verification_code_expires_at: expiresAt,
+    verification_failed_attempts: 0,
   });
 
-  console.log(
-    `[DEV] Email verification code for ${normalizedEmail}: ${verificationCode}`,
-  );
+  logVerificationCodeIssued(verificationCode);
 }
 
 async function login({ email, password }) {
@@ -186,13 +193,14 @@ async function login({ email, password }) {
   const profile = await profileModel.findByEmail(normalizedEmail);
 
   if (!profile) {
-    throw ApiError.unauthorized('Invalid email or password');
+    await comparePassword(password, await dummyPasswordHash());
+    throw ApiError.unauthorized(INVALID_CREDENTIALS);
   }
 
   const match = await comparePassword(password, profile.password);
 
   if (!match) {
-    throw ApiError.unauthorized('Invalid email or password');
+    throw ApiError.unauthorized(INVALID_CREDENTIALS);
   }
 
   if (!profile.is_verified) {
@@ -204,15 +212,8 @@ async function login({ email, password }) {
 
   const token = signToken({ uuid: profile.uuid });
 
-  const {
-    password: _password,
-    verification_code: _code,
-    verification_code_expires_at: _expires,
-    ...safeProfile
-  } = profile;
-
   return {
-    profile: safeProfile,
+    profile: toPublicProfile(profile),
     token,
     verification_required: false,
   };
@@ -223,4 +224,5 @@ module.exports = {
   verifyEmail,
   resendVerificationCode,
   login,
+  MAX_VERIFICATION_ATTEMPTS,
 };

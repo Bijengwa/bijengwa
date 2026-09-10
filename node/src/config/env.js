@@ -8,10 +8,19 @@ function required(name) {
   return value;
 }
 
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const JWT_SECRET = required('JWT_SECRET');
+
+if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters in production');
+}
+
 module.exports = {
   PORT: process.env.PORT || 4000,
-  NODE_ENV: process.env.NODE_ENV || 'development',
+  NODE_ENV,
   DATABASE_URL: required('DATABASE_URL'),
-  JWT_SECRET: required('JWT_SECRET'),
+  JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  CORS_ORIGIN: process.env.CORS_ORIGIN || '',
+  TRUST_PROXY: process.env.TRUST_PROXY === 'true',
 };

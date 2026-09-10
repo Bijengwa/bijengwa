@@ -14,12 +14,12 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { api, ApiError } from '../../src/api/api';
+import { setSessionToken } from '../../src/auth/session';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
-import ArrowLeftIcon from '../../src/components/icons/ArrowLeftIcon';
-import LockIcon from '../../src/components/icons/LockIcon';
-import Logo from '../../src/components/Logo';
+import { Logo } from '../../src/components/Logo';
+import { ArrowLeftIcon, LockIcon } from '../../src/components/icons';
 
 export default function VerifyEmailScreen() {
   const { colors } = useTheme();
@@ -99,10 +99,9 @@ export default function VerifyEmailScreen() {
 
       const token = response.data?.token ?? response.data?.access_token;
 
-      /*
-       * The backend can later return the authenticated session here.
-       * Store the token using src/auth/session.ts when that layer is ready.
-       */
+      if (token) {
+        setSessionToken(token);
+      }
 
       setMessage(
         response.message ||
@@ -110,10 +109,6 @@ export default function VerifyEmailScreen() {
             ? 'Barua pepe imethibitishwa.'
             : 'Email verified successfully.'),
       );
-
-      if (token) {
-        // Session persistence will be connected here.
-      }
 
       router.replace('/dashboard');
     } catch (err) {

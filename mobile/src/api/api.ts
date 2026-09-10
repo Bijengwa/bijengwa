@@ -1,3 +1,5 @@
+import { getSessionToken } from '../auth/session';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 if (!API_URL) {
@@ -12,11 +14,13 @@ type ApiResponse<T> = {
 
 class ApiError extends Error {
   status?: number;
+  data?: unknown;
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -28,6 +32,8 @@ async function request<T>(
     throw new ApiError('API URL is not configured.');
   }
 
+  const token = getSessionToken();
+
   let response: Response;
 
   try {
@@ -36,6 +42,7 @@ async function request<T>(
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });
@@ -57,6 +64,7 @@ async function request<T>(
     throw new ApiError(
       body?.message || 'Something went wrong. Please try again.',
       response.status,
+      body?.data,
     );
   }
 

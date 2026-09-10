@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,15 +16,18 @@ import {
 } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { api, ApiError } from '../../src/api/api';
+import { authLog } from '../../src/auth/log';
+import { setSessionToken } from '../../src/auth/session';
 import { CitySkyline } from '../../src/components/CitySkyline';
 import { LanguageButton } from '../../src/components/LanguageButton';
 import { Logo } from '../../src/components/Logo';
 import { ThemeToggle } from '../../src/components/ThemeToggle';
 import { ArrowRightIcon } from '../../src/components/icons/ArrowRightIcon';
+import { EmailIcon } from '../../src/components/icons/EmailIcon';
 import { EyeIcon } from '../../src/components/icons/EyeIcon';
 import { EyeOffIcon } from '../../src/components/icons/EyeOffIcon';
 import { LockIcon } from '../../src/components/icons/LockIcon';
-import { UserIcon } from '../../src/components/icons/UserIcon';
 import { spacing } from '../../src/constants/spacing';
 import { themeConfig } from '../../src/constants/theme';
 import { typography } from '../../src/constants/typography';
@@ -35,30 +39,131 @@ export default function LoginScreen() {
   const { language } = useLanguage();
   const passwordRef = useRef<TextInput>(null);
 
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [identifierFocused, setIdentifierFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const isSwahili = language === 'sw';
 
-  const handleLogin = () => {
-    /*
-      Backend integration comes here.
+  const handleLogin = async () => {
+    if (loading) return;
 
-      POST /api/auth/login
+    const normalizedEmail = email.trim().toLowerCase();
 
-      {
-        identifier,
-        password
+    if (!normalizedEmail) {
+      setErrorMessage(
+        isSwahili
+          ? 'Tafadhali weka barua pepe yako.'
+          : 'Please enter your email address.',
+      );
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setErrorMessage(
+        isSwahili
+          ? 'Tafadhali weka barua pepe sahihi.'
+          : 'Please enter a valid email address.',
+      );
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage(
+        isSwahili
+          ? 'Tafadhali weka nenosiri lako.'
+          : 'Please enter your password.',
+      );
+      return;
+    }
+
+    setErrorMessage('');
+    setLoading(true);
+    authLog('Login request started');
+
+    try {
+      const response = await api.post<{
+        token?: string;
+        verification_required?: boolean;
+      }>('/auth/login', {
+        email: normalizedEmail,
+        password,
+      });
+
+      authLog('Login response: 200');
+
+      const token = response.data?.token;
+
+      if (token) {
+        setSessionToken(token);
       }
-    */
 
-    console.log({
-      identifier,
-      password,
-    });
+      authLog('Login successful');
+      router.replace('/dashboard');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        authLog(`Login failed: ${error.status ?? 'network'}`);
+
+        const verificationRequired =
+          error.status === 403 &&
+          typeof error.data === 'object' &&
+          error.data !== null &&
+          'verification_required' in error.data &&
+          Boolean(
+            (error.data as { verification_required?: boolean })
+              .verification_required,
+          );
+
+        if (verificationRequired || error.status === 403) {
+          router.replace({
+            pathname: '/auth/verify',
+            params: {
+              email: normalizedEmail,
+            },
+          });
+          return;
+        }
+
+        if (error.status === 401) {
+          setErrorMessage(
+            isSwahili
+              ? 'Barua pepe au nenosiri si sahihi.'
+              : 'Invalid email or password.',
+          );
+          return;
+        }
+
+        if (error.status === 429) {
+          setErrorMessage(
+            isSwahili
+              ? 'Majaribio mengi sana. Tafadhali jaribu tena baadaye.'
+              : 'Too many login attempts. Please try again later.',
+          );
+          return;
+        }
+
+        setErrorMessage(
+          error.message ||
+            (isSwahili
+              ? 'Kuna tatizo. Tafadhali jaribu tena.'
+              : 'Something went wrong. Please try again.'),
+        );
+        return;
+      }
+
+      authLog('Login failed: network');
+      setErrorMessage(
+        isSwahili
+          ? 'Imeshindikana kuungana na seva. Tafadhali jaribu tena.'
+          : 'Unable to connect to the server. Please try again.',
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -115,6 +220,30 @@ export default function LoginScreen() {
               {isSwahili ? 'Karibu Tena' : 'Welcome Back'}
             </Text>
 
+            {errorMessage ? (
+              <View
+                accessibilityRole="alert"
+                style={[
+                  styles.errorBox,
+                  {
+                    backgroundColor: colors.primaryLight,
+                    borderColor: colors.danger,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.errorText,
+                    {
+                      color: colors.danger,
+                    },
+                  ]}
+                >
+                  {errorMessage}
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.field}>
               <Text
                 style={[
@@ -124,9 +253,7 @@ export default function LoginScreen() {
                   },
                 ]}
               >
-                {isSwahili
-                  ? 'Jina la mtumiaji, barua pepe au namba ya simu'
-                  : 'Username, Email or Phone Number'}
+                {isSwahili ? 'Barua pepe' : 'Email'}
               </Text>
 
               <View
@@ -134,44 +261,42 @@ export default function LoginScreen() {
                   styles.inputShell,
                   {
                     backgroundColor: colors.inputBackground,
-                    borderColor: identifierFocused
+                    borderColor: emailFocused
                       ? colors.borderFocused
                       : colors.inputBorder,
                   },
                 ]}
               >
-                <UserIcon
+                <EmailIcon
                   size={themeConfig.icons.md}
                   color={
-                    identifierFocused ? colors.primary : colors.iconMuted
+                    emailFocused ? colors.primary : colors.iconMuted
                   }
                 />
 
                 <TextInput
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  onFocus={() => setIdentifierFocused(true)}
-                  onBlur={() => setIdentifierFocused(false)}
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
                   blurOnSubmit={false}
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  autoComplete="username"
-                  textContentType="username"
-                  keyboardType="default"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  keyboardType="email-address"
                   returnKeyType="next"
                   placeholder={
                     isSwahili
-                      ? 'Jina la mtumiaji, barua pepe au namba ya simu'
-                      : 'Username, email or phone number'
+                      ? 'Weka barua pepe yako'
+                      : 'Enter your email'
                   }
                   placeholderTextColor={colors.textMuted}
                   cursorColor={colors.primary}
                   selectionColor={colors.primary}
                   accessibilityLabel={
-                    isSwahili
-                      ? 'Jina la mtumiaji, barua pepe au namba ya simu'
-                      : 'Username, email or phone number'
+                    isSwahili ? 'Barua pepe' : 'Email'
                   }
                   style={[
                     styles.input,
@@ -295,7 +420,9 @@ export default function LoginScreen() {
 
             <Pressable
               onPress={handleLogin}
+              disabled={loading}
               accessibilityRole="button"
+              accessibilityState={{ disabled: loading }}
               accessibilityLabel={isSwahili ? 'Ingia' : 'Login'}
               style={({ pressed }) => [
                 styles.loginButton,
@@ -303,6 +430,7 @@ export default function LoginScreen() {
                   backgroundColor: pressed
                     ? colors.primaryDark
                     : colors.primary,
+                  opacity: loading ? 0.65 : 1,
                   transform: [
                     {
                       scale: pressed
@@ -314,21 +442,30 @@ export default function LoginScreen() {
                 !isDark ? themeConfig.shadows.light : themeConfig.shadows.none,
               ]}
             >
-              <Text
-                style={[
-                  styles.loginButtonText,
-                  {
-                    color: colors.textOnPrimary,
-                  },
-                ]}
-              >
-                {isSwahili ? 'Ingia' : 'Login'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.textOnPrimary}
+                />
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      styles.loginButtonText,
+                      {
+                        color: colors.textOnPrimary,
+                      },
+                    ]}
+                  >
+                    {isSwahili ? 'Ingia' : 'Login'}
+                  </Text>
 
-              <ArrowRightIcon
-                size={themeConfig.icons.md}
-                color={colors.textOnPrimary}
-              />
+                  <ArrowRightIcon
+                    size={themeConfig.icons.md}
+                    color={colors.textOnPrimary}
+                  />
+                </>
+              )}
             </Pressable>
 
             <View style={styles.registerRow}>
@@ -426,6 +563,18 @@ const styles = StyleSheet.create({
     fontSize: typography.title,
     fontWeight: typography.weight.heavy,
     letterSpacing: typography.letterSpacing.tight,
+  },
+  errorBox: {
+    borderWidth: 1,
+    borderRadius: themeConfig.radius.md,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    fontSize: typography.sm,
+    lineHeight: 20,
+    fontWeight: typography.weight.medium,
   },
   subtitle: {
     fontSize: typography.md,
