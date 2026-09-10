@@ -4,6 +4,7 @@ export { ChevronDownIcon } from './ChevronDownIcon';
 export { SunIcon } from './SunIcon';
 export { MoonIcon } from './MoonIcon';
 export { UserIcon } from './UserIcon';
+export { EmailIcon } from './EmailIcon';
 export { LockIcon } from './LockIcon';
 export { EyeIcon } from './EyeIcon';
 export { EyeOffIcon } from './EyeOffIcon';

@@ -115,19 +115,6 @@ export default function LoginScreen() {
               {isSwahili ? 'Karibu Tena' : 'Welcome Back'}
             </Text>
 
-            <Text
-              style={[
-                styles.subtitle,
-                {
-                  color: colors.textSecondary,
-                },
-              ]}
-            >
-              {isSwahili
-                ? 'Ingia kuendelea na Bijengwa'
-                : 'Sign in to continue with Bijengwa'}
-            </Text>
-
             <View style={styles.field}>
               <Text
                 style={[
@@ -433,7 +420,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formSection: {
-    marginTop: themeConfig.screen.sectionGap,
+    marginTop: themeConfig.screen.sectionGap - spacing.lg,
   },
   title: {
     fontSize: typography.title,
@@ -447,7 +434,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   field: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   label: {
     fontSize: typography.sm,
@@ -514,8 +501,9 @@ const styles = StyleSheet.create({
   },
   bottomVisual: {
     marginTop: 'auto',
-    paddingTop: spacing.xxxl,
+    paddingTop: spacing.xl,
     alignItems: 'center',
+    minHeight: 150,
   },
   footerText: {
     marginTop: spacing.md,

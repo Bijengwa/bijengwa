@@ -7,9 +7,13 @@ import { ThemeColors } from '../constants/colors';
 
 type CitySkylineProps = {
   colors: ThemeColors;
+  height?: number;
 };
 
-export function CitySkyline({ colors }: CitySkylineProps) {
+export function CitySkyline({
+  colors,
+  height = themeConfig.skyline.height,
+}: CitySkylineProps) {
   const [width, setWidth] = useState(0);
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -27,7 +31,7 @@ export function CitySkyline({ colors }: CitySkylineProps) {
       {width > 0 ? (
       <Svg
         width={width}
-        height={themeConfig.skyline.height}
+        height={height}
         viewBox="0 0 390 128"
         preserveAspectRatio="none"
       >
@@ -75,7 +79,6 @@ export function CitySkyline({ colors }: CitySkylineProps) {
 
 const styles = StyleSheet.create({
   container: {
-    height: themeConfig.skyline.height,
     width: '100%',
   },
 });
