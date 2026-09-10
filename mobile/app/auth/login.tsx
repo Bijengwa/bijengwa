@@ -9,7 +9,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { CitySkyline } from '../../src/components/CitySkyline';
@@ -30,7 +33,6 @@ import { useTheme } from '../../src/context/ThemeContext';
 export default function LoginScreen() {
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
-  const insets = useSafeAreaInsets();
   const passwordRef = useRef<TextInput>(null);
 
   const [identifier, setIdentifier] = useState('');
@@ -71,19 +73,12 @@ export default function LoginScreen() {
     >
       <KeyboardAvoidingView
         style={styles.keyboard}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets
-          contentContainerStyle={[
-            styles.scrollContent,
-            {
-              paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md,
-            },
-          ]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.topBar}>
@@ -156,9 +151,6 @@ export default function LoginScreen() {
                       ? colors.borderFocused
                       : colors.inputBorder,
                   },
-                  identifierFocused && !isDark
-                    ? themeConfig.shadows.soft
-                    : themeConfig.shadows.none,
                 ]}
               >
                 <UserIcon
@@ -173,12 +165,13 @@ export default function LoginScreen() {
                   onChangeText={setIdentifier}
                   onFocus={() => setIdentifierFocused(true)}
                   onBlur={() => setIdentifierFocused(false)}
+                  blurOnSubmit={false}
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="username"
                   textContentType="username"
-                  keyboardType="email-address"
+                  keyboardType="default"
                   returnKeyType="next"
                   placeholder={
                     isSwahili
@@ -224,9 +217,6 @@ export default function LoginScreen() {
                       ? colors.borderFocused
                       : colors.inputBorder,
                   },
-                  passwordFocused && !isDark
-                    ? themeConfig.shadows.soft
-                    : themeConfig.shadows.none,
                 ]}
               >
                 <LockIcon
@@ -422,6 +412,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: themeConfig.screen.paddingHorizontal,
+    paddingBottom:
+      (initialWindowMetrics?.insets.bottom ?? 0) + spacing.lg + spacing.md,
   },
   topBar: {
     width: '100%',
@@ -463,7 +455,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   inputShell: {
-    minHeight: themeConfig.inputs.height,
+    height: themeConfig.inputs.height,
     borderWidth: themeConfig.inputs.borderWidth,
     borderRadius: themeConfig.inputs.radius,
     flexDirection: 'row',
@@ -474,9 +466,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: '100%',
     fontSize: typography.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 0,
   },
   visibilityButton: {
     minWidth: 44,
