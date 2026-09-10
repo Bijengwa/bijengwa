@@ -8,6 +8,7 @@ const PUBLIC_COLUMNS = [
   'username',
   'email',
   'phone_number',
+  'is_verified',
   'created_at',
   'updated_at',
 ];
